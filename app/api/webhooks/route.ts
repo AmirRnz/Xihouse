@@ -1,6 +1,8 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
+import { createOrUpdateUser } from "@/lib/actions/user";
+import { UserDataType } from "@/types/types";
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET;
@@ -49,23 +51,28 @@ export async function POST(req: Request) {
 
   // Do something with payload
   // For this guide, log payload to console
-  const { id } = evt.data;
-  const eventType = evt.type;
-  console.log(`Received webhook with ID ${id} and event type of ${eventType}`);
-  //   console.log("Webhook payload:", body);
+  const { id } = evt?.data;
+  const eventType = evt?.type;
 
-  // if (evt.type === 'user.created') {
-  //     console.log('userId:', evt.data.id)
+  console.log(`Received webhook with ID ${id} and event type of ${eventType}`);
+  console.log("Webhook payload:", body);
+  console.log("data", evt.data);
+  if (evt.type === "user.created") {
+    console.log("userId:", evt.data.id);
+    console.log(
+      `Received webhook with ID ${id} and event type of ${eventType}`
+    );
+    console.log("Webhook payload:", body);
+    console.log("data", evt.data);
+  }
+
+  //   if (evt.type === "user.created" || evt.type === "user.updated" ) {
+  //     try{
+  //         const user = await createOrUpdateUser(body: UserDataType){
+
+  //         }
+  //     }
   //   }
 
-  if (evt.type === "user.created") {
-    console.log(`user created`);
-  }
-  if (evt.type === "user.deleted") {
-    console.log(`user deleted`);
-  }
-  if (evt.type === "user.updated") {
-    console.log(`user updated`);
-  }
   return new Response("Webhook received", { status: 200 });
 }
