@@ -1,8 +1,10 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { clerkClient, WebhookEvent } from "@clerk/nextjs/server";
+import { WebhookEvent } from "@clerk/nextjs/server";
 import { createOrUpdateUser, deleteUser } from "@/lib/actions/user";
 // import { UserDataType } from "@/types/types";
+import { clerkClient } from "@clerk/clerk-sdk-node";
+// this version of clerkclient is deprecated
 
 export async function POST(req: Request) {
   const SIGNING_SECRET = process.env.SIGNING_SECRET;
@@ -72,12 +74,13 @@ export async function POST(req: Request) {
       //primary_email is a problem
       if (user && eventType === "user.created") {
         try {
-          const client = await clerkClient(); // Get the actual client instance
-          client.users.updateUserMetadata(id as string, {
+          const client = clerkClient;
+          const response = await client.users.updateUserMetadata(id as string, {
             publicMetadata: {
               usermongoId: user._id,
             },
           });
+          console.log("Clerk Response:", response);
         } catch (error) {
           console.log("could not update user metadata", error);
         }
