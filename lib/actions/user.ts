@@ -1,12 +1,14 @@
 import User from "@/lib/models/user.model";
 import { connect } from "@/lib/mongodb/mongoose";
-import { UserDataType } from "@/types/types";
-export const createOrUpdateUser = async (userData: UserDataType) => {
+export const createOrUpdateUser = async (
+  id: string | undefined,
+  first_name: string | null,
+  last_name: string | null,
+  image_url?: string,
+  primary_email?: string
+) => {
   try {
     await connect();
-    console.log("hit user update", userData);
-    // Destructure the userData object to match the schema fields
-    const { id, first_name, last_name, image_url, email_addresses } = userData;
 
     // Create or update the user document
     const user = await User.findOneAndUpdate(
@@ -16,7 +18,7 @@ export const createOrUpdateUser = async (userData: UserDataType) => {
           firstName: first_name,
           lastName: last_name,
           profilePicture: image_url,
-          email: email_addresses[0],
+          email: primary_email,
         },
       },
       { upsert: true, new: true }
@@ -29,13 +31,11 @@ export const createOrUpdateUser = async (userData: UserDataType) => {
   }
 };
 
-export const deleteUser = async (userData: UserDataType) => {
+export const deleteUser = async (id: string | undefined) => {
   try {
     await connect();
-    console.log("hit user delete", userData);
+    console.log("hit user delete", id);
     // Destructure the userData object to match the schema fields
-    const { id } = userData;
-
     await User.findOneAndDelete({ clerkId: id });
   } catch (error) {
     console.error("Could delete:", error);

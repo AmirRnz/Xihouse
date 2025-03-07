@@ -1,7 +1,7 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import { WebhookEvent } from "@clerk/nextjs/server";
-// import { createOrUpdateUser } from "@/lib/actions/user";
+import { clerkClient, WebhookEvent } from "@clerk/nextjs/server";
+import { createOrUpdateUser, deleteUser } from "@/lib/actions/user";
 // import { UserDataType } from "@/types/types";
 
 export async function POST(req: Request) {
@@ -51,28 +51,55 @@ export async function POST(req: Request) {
 
   // Do something with payload
   // For this guide, log payload to console
-  const { id } = evt?.data;
-  const eventType = evt?.type;
+  const id = evt.data.id;
+  const eventType = evt.type;
 
   console.log(`Received webhook with ID ${id} and event type of ${eventType}`);
   console.log("Webhook payload:", body);
   console.log("data", evt.data);
-  if (evt.type === "user.created") {
-    console.log("userId:", evt.data.id);
-    console.log(
-      `Received webhook with ID ${id} and event type of ${eventType}`
-    );
-    console.log("Webhook payload:", body);
-    console.log("data", evt.data);
+
+  if (evt.type === "user.created" || evt.type === "user.updated") {
+    try {
+      const { first_name, last_name, image_url } = evt?.data;
+      const primary_email = evt.data.email_addresses[0].email_address;
+      const user = await createOrUpdateUser(
+        id,
+        first_name,
+        last_name,
+        image_url,
+        primary_email
+      );
+      //primary_email is a problem
+      if (user && eventType === "user.created") {
+        try {
+          const client = await clerkClient(); // Get the actual client instance
+          client.users.updateUserMetadata(id as string, {
+            publicMetadata: {
+              usermongoId: user._id,
+            },
+          });
+        } catch (error) {
+          console.log("could not update user metadata", error);
+        }
+      }
+    } catch (error) {
+      console.log("could not update or create user", error);
+      return new Response("could not update or create user", {
+        status: 400,
+      });
+    }
   }
 
-  //   if (evt.type === "user.created" || evt.type === "user.updated" ) {
-  //     try{
-  //         const user = await createOrUpdateUser(body: UserDataType){
-
-  //         }
-  //     }
-  //   }
+  if (eventType === "user.deleted") {
+    try {
+      await deleteUser(id);
+    } catch (error) {
+      console.log("could not delete", error);
+      return new Response("could not delete user", {
+        status: 400,
+      });
+    }
+  }
 
   return new Response("Webhook received", { status: 200 });
 }
